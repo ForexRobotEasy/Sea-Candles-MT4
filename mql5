@@ -1,0 +1,137 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                                   Sea Candles MT4|
+//|                                Developed by Forex Robot Easy Team|
+//|                                              forexroboteasy.com  |
+//+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
+//|                             Global Variables and Constants       |
+//+------------------------------------------------------------------+
+#define CCI_RANGE 100
+
+//+------------------------------------------------------------------+
+//|                        CCI Oscillator Calculation                 |
+//+------------------------------------------------------------------+
+double CalculateCCI(int period)
+{
+    double sum = 0;
+    double cci = 0;
+    
+    for (int i = 0; i < period; i++)
+    {
+        sum += (Close[i] - iMA(NULL, 0, period, 0, MODE_SMA, PRICE_CLOSE));
+    }
+    
+    double meanDeviation = sum / period;
+    
+    if (meanDeviation != 0)
+    {
+        cci = (Close[0] - iMA(NULL, 0, period, 0, MODE_SMA, PRICE_CLOSE)) / (0.015 * meanDeviation);
+    }
+    
+    return cci;
+}
+
+//+------------------------------------------------------------------+
+//|                     Moving Average Calculation                    |
+//+------------------------------------------------------------------+
+double CalculateMovingAverage(int period)
+{
+    return iMA(NULL, 0, period, 0, MODE_SMA, PRICE_CLOSE);
+}
+
+//+------------------------------------------------------------------+
+//|                         Signal Generation                         |
+//+------------------------------------------------------------------+
+bool GenerateSignal(int period, double cciThreshold, double maThreshold)
+{
+    double cci = CalculateCCI(period);
+    double ma = CalculateMovingAverage(period);
+    
+    if (cci > cciThreshold && Close[0] < ma - maThreshold)
+    {
+        // Open buy position
+        return true;
+    }
+    else if (cci < -cciThreshold && Close[0] > ma + maThreshold)
+    {
+        // Open sell position
+        return true;
+    }
+    
+    return false;
+}
+
+//+------------------------------------------------------------------+
+//|                     Classic Divergence Identification             |
+//+------------------------------------------------------------------+
+bool IdentifyClassicDivergence()
+{
+    double previousHigh = High[1];
+    double currentHigh = High[0];
+    double previousCCI = CalculateCCI();
+    double currentCCI = CalculateCCI();
+    
+    if (currentHigh > previousHigh && currentCCI < previousCCI)
+    {
+        return true;
+    }
+    
+    return false;
+}
+
+//+------------------------------------------------------------------+
+//|                Overbought and Oversold States Detection           |
+//+------------------------------------------------------------------+
+bool DetectOverboughtOversoldStates(double threshold)
+{
+    double cci = CalculateCCI();
+    
+    if (cci > threshold || cci < -threshold)
+    {
+        return true;
+    }
+    
+    return false;
+}
+
+//+------------------------------------------------------------------+
+//|                       Candlestick Visualization                   |
+//+------------------------------------------------------------------+
+void VisualizeCandlesticks()
+{
+    // Code to visualize candlesticks
+}
+
+//+------------------------------------------------------------------+
+//|                       Notification System                         |
+//+------------------------------------------------------------------+
+void SendNotification(string message)
+{
+    // Code to send notification
+}
+
+//+------------------------------------------------------------------+
+//|                             Expert Advisor                        |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+    if (GenerateSignal(14, 70, 0.001))
+    {
+        VisualizeCandlesticks();
+        SendNotification('Buy signal generated');
+    }
+    
+    if (IdentifyClassicDivergence())
+    {
+        VisualizeCandlesticks();
+        SendNotification('Classic divergence detected');
+    }
+    
+    if (DetectOverboughtOversoldStates(CCI_RANGE))
+    {
+        VisualizeCandlesticks();
+        SendNotification('Overbought or oversold state detected');
+    }
+}
